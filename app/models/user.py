@@ -1,5 +1,5 @@
 """
-Model de Usuário - [RF01, RF12]
+Model de Usuário
 """
 
 from sqlalchemy import Column, Integer, String, Boolean, Enum as SQLEnum
@@ -23,12 +23,18 @@ class User(Base, TimestampMixin):
     name = Column(String(200), nullable=False)
     email = Column(String(200), unique=True, nullable=False, index=True)
     password_hash = Column(String(255), nullable=False)
-    role = Column(SQLEnum(UserRole), nullable=False, default=UserRole.SELLER)
+    # Corrigir: passar o enum Python diretamente, não SQLEnum
+    role = Column(String(20), nullable=False, default="seller")
     active = Column(Boolean, default=True, nullable=False)
     temporary_password = Column(Boolean, default=True, nullable=False)
 
-    # Relacionamentos
     sales = relationship("Sale", back_populates="user")
+
+    @property
+    def role_enum(self) -> UserRole:
+        """Retorna o role como enum"""
+        return UserRole(self.role)
 
     def __repr__(self):
         return f"<User(id={self.id}, email={self.email}, role={self.role})>"
+

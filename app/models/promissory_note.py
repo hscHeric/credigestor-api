@@ -2,7 +2,7 @@
 Model de Promissória - [RF03, RF04, RF06, RF09, RF10]
 """
 
-from sqlalchemy import Column, Integer, Numeric, Date, ForeignKey, Enum as SQLEnum, Text
+from sqlalchemy import Column, Integer, Numeric, Date, ForeignKey, String, Text
 from sqlalchemy.orm import relationship
 import enum
 from datetime import date
@@ -31,12 +31,8 @@ class PromissoryNote(Base, TimestampMixin):
     due_date = Column(Date, nullable=False, index=True)
     payment_date = Column(Date, nullable=True)
 
-    status = Column(
-        SQLEnum(PromissoryNoteStatus),
-        default=PromissoryNoteStatus.PENDING,
-        nullable=False,
-        index=True,
-    )
+    # Usar String em vez de Enum
+    status = Column(String(20), nullable=False, default="pending", index=True)
 
     notes = Column(Text, nullable=True)
 
@@ -47,6 +43,11 @@ class PromissoryNote(Base, TimestampMixin):
     )
 
     @property
+    def status_enum(self) -> PromissoryNoteStatus:
+        """Retorna o status como enum"""
+        return PromissoryNoteStatus(self.status)
+
+    @property
     def outstanding_balance(self) -> float:
         """Calcula o saldo devedor da promissória"""
         return float(self.original_amount) - float(self.paid_amount)
@@ -54,7 +55,7 @@ class PromissoryNote(Base, TimestampMixin):
     @property
     def days_overdue(self) -> int:
         """Calcula quantos dias de atraso"""
-        if self.status in [PromissoryNoteStatus.PAID]:
+        if self.status == "paid":
             return 0
 
         today = date.today()
@@ -65,7 +66,7 @@ class PromissoryNote(Base, TimestampMixin):
     @property
     def is_overdue(self) -> bool:
         """Verifica se a promissória está vencida"""
-        return date.today() > self.due_date and self.status != PromissoryNoteStatus.PAID
+        return date.today() > self.due_date and self.status != "paid"
 
     def __repr__(self):
         return f"<PromissoryNote(id={self.id}, sale_id={self.sale_id}, installment={self.installment_number}, status={self.status})>"
