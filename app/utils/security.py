@@ -4,17 +4,21 @@ Utilitários de segurança - Hash de senha e JWT
 
 from datetime import datetime, timedelta, timezone
 from typing import Optional
+
 from jose import JWTError, jwt
 from passlib.context import CryptContext
+
 from app.config import settings
 
-# Contexto para hash de senha com bcrypt
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+pwd_context = CryptContext(
+    schemes=["argon2"],
+    deprecated="auto",
+)
 
 
 def hash_password(password: str) -> str:
     """
-    Gera hash da senha usando bcrypt
+    Gera hash da senha usando Argon2
 
     Args:
         password: Senha em texto plano
@@ -27,11 +31,11 @@ def hash_password(password: str) -> str:
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """
-    Verifica se a senha corresponde ao hash
+    Verifica se a senha corresponde ao hash armazenado
 
     Args:
         plain_password: Senha em texto plano
-        hashed_password: Hash da senha armazenado
+        hashed_password: Hash armazenado
 
     Returns:
         True se a senha estiver correta, False caso contrário
@@ -39,7 +43,10 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
     return pwd_context.verify(plain_password, hashed_password)
 
 
-def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
+def create_access_token(
+    data: dict,
+    expires_delta: Optional[timedelta] = None,
+) -> str:
     """
     Cria um token JWT
 
@@ -60,8 +67,11 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -
         )
 
     to_encode.update({"exp": expire})
+
     encoded_jwt = jwt.encode(
-        to_encode, settings.JWT_SECRET, algorithm=settings.JWT_ALGORITHM
+        to_encode,
+        settings.JWT_SECRET,
+        algorithm=settings.JWT_ALGORITHM,
     )
 
     return encoded_jwt
@@ -79,7 +89,9 @@ def decode_access_token(token: str) -> Optional[dict]:
     """
     try:
         payload = jwt.decode(
-            token, settings.JWT_SECRET, algorithms=[settings.JWT_ALGORITHM]
+            token,
+            settings.JWT_SECRET,
+            algorithms=[settings.JWT_ALGORITHM],
         )
         return payload
     except JWTError:
