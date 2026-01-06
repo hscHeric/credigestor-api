@@ -6,3 +6,66 @@ python = "3.13.11"
 _.python.venv = { path = ".venv", create = true }
 PROJECT_ROOT = "{{cwd}}"
 
+[tasks.install]
+description = "Instalar dependências do projeto"
+run = "pip install -r requirements.txt"
+
+[tasks.up]
+description = "Subir containers (DB + MailHog)"
+run = [
+  "docker compose up -d",
+  "echo '⏳ Aguardando PostgreSQL ficar pronto...'",
+  "sleep 5",
+  "docker compose exec -T db pg_isready -U credigestor || echo '⚠️  PostgreSQL ainda não está pronto'",
+]
+
+[tasks.down]
+description = "Parar containers"
+run = "docker compose down"
+
+[tasks.logs]
+description = "Ver logs dos containers"
+run = "docker compose logs -f"
+
+[tasks.dev]
+description = "Rodar aplicação em modo desenvolvimento"
+depends = ["up"]
+run = "uvicorn app.main:app --reload --port 8000"
+
+[tasks.test]
+description = "Rodar testes unitários"
+run = "pytest -v"
+
+[tasks.test-cov]
+description = "Rodar testes com cobertura"
+run = "pytest -v --cov=app --cov-report=html --cov-report=term-missing"
+
+[tasks.clean]
+description = "Limpar cache e arquivos temporários"
+run = [
+  "find . -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null || true",
+  "find . -type f -name '*.pyc' -delete 2>/dev/null || true",
+  "rm -rf .pytest_cache .coverage htmlcov",
+  "echo ' Cache limpo!'",
+]
+
+[tasks.db-shell]
+description = "Abrir shell do PostgreSQL"
+run = "docker compose exec db psql -U credigestor -d credigestor_db"
+
+[tasks.db-reset]
+description = "Resetar banco de dados (CUIDADO: apaga tudo)"
+run = [
+  "docker compose down -v",
+  "docker compose up -d db",
+  "sleep 5",
+  "echo ' Banco resetado!'",
+]
+
+[tasks.format]
+description = "Formatar código com black"
+run = "black app/"
+
+[tasks.lint]
+description = "Verificar código com flake8"
+run = "flake8 app/ --max-line-length=120"
