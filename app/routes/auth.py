@@ -66,7 +66,7 @@ def change_password(
     return MessageResponse(message="Senha alterada com sucesso.")
 
 
-@router.get("/me", response_model=dict)
+@router.get("/me")
 def get_current_user_info(current_user: User = Depends(get_current_user)):
     """
     Retorna informações do usuário autenticado
@@ -81,7 +81,7 @@ def get_current_user_info(current_user: User = Depends(get_current_user)):
         "id": current_user.id,
         "name": current_user.name,
         "email": current_user.email,
-        "role": current_user.role.value,
+        "role": current_user.role,
         "active": current_user.active,
         "temporary_password": current_user.temporary_password,
     }
