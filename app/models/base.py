@@ -1,0 +1,22 @@
+"""
+Base model com campos comuns
+"""
+
+from datetime import datetime
+from sqlalchemy import Column, DateTime
+from sqlalchemy.ext.declarative import declared_attr
+
+
+class TimestampMixin:
+    """Mixin para adicionar timestamps automáticos"""
+
+    @declared_attr
+    def created_at(cls):
+        return Column(DateTime, default=datetime.now, nullable=False)
+
+    @declared_attr
+    def updated_at(cls):
+        return Column(
+            DateTime, default=datetime.now, onupdate=datetime.now, nullable=False
+        )
+
