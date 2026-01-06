@@ -1,0 +1,17 @@
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: credigestor_db
+    environment:
+      POSTGRES_USER: credigestor_admin
+      POSTGRES_PASSWORD: credigestor_admin
+      POSTGRES_DB: credigestor_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U credigestor"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
