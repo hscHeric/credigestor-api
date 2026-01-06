@@ -5,10 +5,11 @@ Script para criar usuário administrador inicial
 import sys
 from pathlib import Path
 
+# Adicionar diretório raiz ao path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from app.database import SessionLocal
-from app.models.user import User, UserRole
+from app.models.user import User
 from app.utils.security import hash_password
 
 
@@ -25,12 +26,12 @@ def create_admin_user():
             print("Email: admin@credigestor.com")
             return
 
-        # Criar admin
+        # Criar admin - usar string "admin" em vez de enum
         admin = User(
             name="Administrador",
             email="admin@credigestor.com",
             password_hash=hash_password("admin123"),
-            role=UserRole.ADMIN,
+            role="admin",  # String diretamente
             active=True,
             temporary_password=True,
         )
@@ -38,13 +39,13 @@ def create_admin_user():
         db.add(admin)
         db.commit()
 
-        print("Usuário admin criado com sucesso!")
+        print("✓ Usuário admin criado com sucesso!")
         print("Email: admin@credigestor.com")
         print("Senha: admin123")
         print("IMPORTANTE: Troque a senha após o primeiro login!")
 
     except Exception as e:
-        print(f"✗ Erro ao criar admin: {e}")
+        print(f"Erro ao criar admin: {e}")
         db.rollback()
     finally:
         db.close()
@@ -52,3 +53,4 @@ def create_admin_user():
 
 if __name__ == "__main__":
     create_admin_user()
+
