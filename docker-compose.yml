@@ -1,17 +1,52 @@
 services:
-  db:
+  postgres:
     image: postgres:15-alpine
     container_name: credigestor_db
     environment:
-      POSTGRES_USER: credigestor_admin
-      POSTGRES_PASSWORD: credigestor_admin
+      POSTGRES_USER: credigestor
+      POSTGRES_PASSWORD: credigestor123
       POSTGRES_DB: credigestor_db
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    networks:
+      - credigestor_network
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U credigestor"]
       interval: 10s
       timeout: 5s
       retries: 5
+
+  # Mailhog para testar envio de emails localmente
+  mailhog:
+    image: mailhog/mailhog:latest
+    container_name: credigestor_mailhog
+    ports:
+      - "1025:1025" # SMTP
+      - "8025:8025" # Web UI
+    networks:
+      - credigestor_network
+
+  localstack:
+    image: localstack/localstack:latest
+    container_name: credigestor_localstack
+    ports:
+      - "4566:4566"            # Gateway principal
+      - "4510-4559:4510-4559"  # Portas de serviços
+    environment:
+      - SERVICES=s3
+      - DEBUG=1
+      - DATA_DIR=/tmp/localstack/data
+    volumes:
+      - "./localstack_data:/var/lib/localstack"
+      - "/var/run/docker.sock:/var/run/docker.sock"
+    networks:
+      - credigestor_network
+
+volumes:
+  postgres_data:
+
+networks:
+  credigestor_network:
+    driver: bridge
