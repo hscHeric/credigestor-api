@@ -69,3 +69,7 @@ run = "black app/"
 [tasks.lint]
 description = "Verificar código com flake8"
 run = "flake8 app/ --max-line-length=120"
+
+[tasks.create-admin]
+description = "Criar usuário administrador inicial"
+run = "python scripts/create_admin.py"
