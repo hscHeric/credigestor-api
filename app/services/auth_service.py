@@ -4,7 +4,7 @@ Service de Autenticação
 
 from sqlalchemy.orm import Session
 from fastapi import HTTPException, status
-from app.models.user import User
+from app.models.user import User, UserRole
 from app.schemas.auth import LoginRequest, TokenResponse
 from app.utils.security import verify_password, create_access_token
 
@@ -36,21 +36,23 @@ class AuthService:
                 detail="E-mail ou senha incorretos. Por favor, tente novamente.",
             )
 
+        # MSG04: "Sua conta está inativa. Entre em contato com o administrador."
         if not user.active:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Sua conta está inativa. Entre em contato com o administrador.",
             )
 
-        # Criar token JWT
+        # Criar token JWT - usar role como string
         access_token = create_access_token(
-            data={"sub": user.id, "email": user.email, "role": user.role.value}
+            data={"sub": user.id, "email": user.email, "role": user.role}
         )
 
+        # MSG01: "Login realizado com sucesso."
         return TokenResponse(
             access_token=access_token,
             token_type="bearer",
             user_id=user.id,
             user_name=user.name,
-            user_role=user.role.value,
+            user_role=user.role,
         )
