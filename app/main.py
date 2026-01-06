@@ -10,20 +10,18 @@ logger = logging.getLogger(__name__)
 try:
     from app.config import settings
     from app.database import engine, Base
-    from app.models import User, Customer, Sale, PromissoryNote, Payment, SystemConfig
+    from app.models import User, Customer, Sale, PromissoryNote, Payment, SystemConfig  # noqa: F401
 except ImportError as e:
     logger.error(f"Erro ao importar módulos: {e}")
     raise
 
 
-# --- DEFINIÇÃO DO LIFESPAN ---
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """
     Gerencia o ciclo de vida da aplicação:
     Executa o que está antes do yield no startup e o que está depois no shutdown.
     """
-    # Lógica de Startup
     try:
         logger.info("Tentando conectar ao banco de dados e criar tabelas...")
         Base.metadata.create_all(bind=engine)
@@ -50,7 +48,7 @@ app = FastAPI(
     version="1.0.0",
     docs_url="/docs" if settings.is_development else None,
     redoc_url="/redoc" if settings.is_development else None,
-    lifespan=lifespan,  # Registra o lifespan aqui
+    lifespan=lifespan,
 )
 
 app.add_middleware(
