@@ -1,95 +1,88 @@
 """
-Dependencies para injeção de dependência do FastAPI
+Endpoints de Autenticação
 """
 
-from fastapi import Depends, HTTPException, status
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-from typing import Optional
 
 from app.database import get_db
-from app.models.user import User, UserRole
-from app.utils.security import decode_access_token
+from app.schemas.auth import LoginRequest, TokenResponse, ChangePasswordRequest
+from app.schemas.base import MessageResponse
+from app.services.auth_service import AuthService
+from app.utils.dependencies import get_current_user
+from app.utils.security import verify_password, hash_password
+from app.models.user import User
 
-# Security scheme para autenticação Bearer
-security = HTTPBearer()
+router = APIRouter()
 
 
-def get_current_user(
-    credentials: HTTPAuthorizationCredentials = Depends(security),
+@router.post("/login", response_model=TokenResponse, status_code=status.HTTP_200_OK)
+def login(login_data: LoginRequest, db: Session = Depends(get_db)):
+    """
+    [RF01] Autenticar Usuário - LOGIN
+
+    Fluxo Principal:
+    1. Usuário fornece e-mail e senha
+    2. Sistema valida credenciais
+    3. Retorna token JWT se válido
+
+    Mensagens:
+    - MSG01: Login realizado com sucesso
+    - MSG02: E-mail ou senha incorretos
+    - MSG04: Conta inativa
+    """
+    return AuthService.authenticate_user(db, login_data)
+
+
+@router.post("/change-password", response_model=MessageResponse)
+def change_password(
+    password_data: ChangePasswordRequest,
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
-) -> User:
+):
     """
-    Obtém o usuário atual a partir do token JWT
+    Trocar senha do usuário autenticado
 
     Args:
-        credentials: Credenciais do header Authorization
-        db: Sessão do banco de dados
+        password_data: Senha atual e nova senha
+        current_user: Usuário autenticado
+        db: Sessão do banco
 
     Returns:
-        Usuário autenticado
-
-    Raises:
-        HTTPException: Se o token for inválido ou usuário não encontrado
+        Mensagem de sucesso
     """
-    token = credentials.credentials
-    payload = decode_access_token(token)
-
-    if payload is None:
+    # Verificar senha atual
+    if not verify_password(password_data.current_password, current_user.password_hash):
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Token inválido ou expirado",
-            headers={"WWW-Authenticate": "Bearer"},
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Senha atual incorreta."
         )
 
-    user_id: int = payload.get("sub")
-    if user_id is None:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Token inválido",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
+    # Atualizar senha
+    current_user.password_hash = hash_password(password_data.new_password)
+    current_user.temporary_password = False
 
-    user = db.query(User).filter(User.id == user_id).first()
-    if user is None:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Usuário não encontrado",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
+    db.commit()
 
-    if not user.active:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Sua conta está inativa. Entre em contato com o administrador.",
-        )
-
-    return user
+    return MessageResponse(message="Senha alterada com sucesso.")
 
 
-def get_current_active_user(current_user: User = Depends(get_current_user)) -> User:
+@router.get("/me")
+def get_current_user_info(current_user: User = Depends(get_current_user)):
     """
-    Verifica se o usuário está ativo
-    """
-    return current_user
-
-
-def require_admin(current_user: User = Depends(get_current_user)) -> User:
-    """
-    Verifica se o usuário é administrador
+    Retorna informações do usuário autenticado
 
     Args:
-        current_user: Usuário atual
+        current_user: Usuário autenticado
 
     Returns:
-        Usuário se for admin
-
-    Raises:
-        HTTPException: Se o usuário não for admin
+        Informações do usuário
     """
-    if current_user.role != UserRole.ADMIN:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Acesso negado. Apenas administradores podem acessar este recurso.",
-        )
-    return current_user
+    return {
+        "id": current_user.id,
+        "name": current_user.name,
+        "email": current_user.email,
+        "role": current_user.role,
+        "active": current_user.active,
+        "temporary_password": current_user.temporary_password,
+    }
+
