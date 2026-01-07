@@ -3,6 +3,8 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import inspect
+from app.router import auth
+
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -11,7 +13,6 @@ try:
     from app.config import settings
     from app.database import engine, Base
     from app.models import User, Customer, Sale, PromissoryNote, Payment, SystemConfig  # noqa: F401
-    from app.routes import auth
 except ImportError as e:
     logger.error(f"Erro ao importar módulos: {e}")
     raise
@@ -59,6 +60,7 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
 
 app.include_router(auth.router, prefix="/api/auth", tags=["Autenticação"])
 
