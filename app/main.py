@@ -6,6 +6,7 @@ from sqlalchemy import inspect
 from app.router import (
     auth_routes,
     customer_routes,
+    dashboard_routes,
     payment_routes,
     promissory_note_routes,
     sale_routes,
@@ -75,6 +76,7 @@ app.include_router(
     promissory_note_routes.router, prefix="/api/promissory-notes", tags=["Promissórias"]
 )
 app.include_router(payment_routes.router, prefix="/api", tags=["Pagamentos"])
+app.include_router(dashboard_routes.router, prefix="/api/dashboard", tags=["Dashboard"])
 
 
 @app.get("/")

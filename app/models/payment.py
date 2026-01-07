@@ -1,5 +1,5 @@
 """
-Model de Pagamento - [RF04, RF10, RF11]
+Model de Pagamento
 """
 
 from __future__ import annotations
@@ -61,4 +61,3 @@ class Payment(Base, TimestampMixin):
             f"<Payment(id={self.id}, promissory_note_id={self.promissory_note_id}, "
             f"amount={self.amount_paid})>"
         )
-
