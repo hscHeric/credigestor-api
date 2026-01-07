@@ -31,8 +31,6 @@ def create_customer(db: Session, data: CustomerCreate) -> Customer:
 
 def update_customer(db: Session, customer: Customer, data: CustomerUpdate) -> Customer:
     payload = data.model_dump(exclude_unset=True)
-    if "cpf" in payload:
-        payload.pop("cpf")
 
     for field, value in payload.items():
         setattr(customer, field, value)
