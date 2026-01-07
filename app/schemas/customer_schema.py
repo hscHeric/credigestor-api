@@ -41,4 +41,3 @@ class CustomerUpdate(BaseModel):
 class CustomerOut(CustomerBase, TimestampSchema):
     model_config = ConfigDict(from_attributes=True)
     id: int
-

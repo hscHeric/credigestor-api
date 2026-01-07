@@ -6,8 +6,8 @@ from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.models.user import User
-from app.schemas.auth import LoginRequest, TokenResponse
-from app.services.auth import (
+from app.schemas.auth_schema import LoginRequest, TokenResponse
+from app.services.auth_service import (
     authenticate_user,
     create_access_token,
     decode_access_token,

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from app.models.user import User, UserRole
-from app.services.auth import (
+from app.services.auth_service import (
     authenticate_user,
     create_access_token,
     decode_access_token,
@@ -68,4 +68,3 @@ def test_authenticate_user_wrong_password_returns_none(db_session):
 def test_authenticate_user_not_found_returns_none(db_session):
     found = authenticate_user(db_session, "naoexiste@u.com", "senha")
     assert found is None
-

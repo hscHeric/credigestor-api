@@ -3,7 +3,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import inspect
-from app.router import auth
+from app.router import auth_routes
 
 
 logging.basicConfig(level=logging.INFO)
@@ -62,7 +62,7 @@ app.add_middleware(
 )
 
 
-app.include_router(auth.router, prefix="/api/auth", tags=["Autenticação"])
+app.include_router(auth_routes.router, prefix="/api/auth", tags=["Autenticação"])
 
 
 @app.get("/")

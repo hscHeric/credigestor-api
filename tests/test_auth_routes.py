@@ -1,8 +1,8 @@
 from __future__ import annotations
 
 from app.models.user import User, UserRole
-from app.services.auth import create_access_token, hash_password
-from app.services.auth import jwt, settings  # para montar token sem role/sub
+from app.services.auth_service import create_access_token, hash_password
+from app.services.auth_service import jwt, settings
 
 
 def _create_user(
