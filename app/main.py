@@ -9,6 +9,7 @@ from app.router import (
     dashboard_routes,
     payment_routes,
     promissory_note_routes,
+    report_routes,
     sale_routes,
 )
 
@@ -77,6 +78,7 @@ app.include_router(
 )
 app.include_router(payment_routes.router, prefix="/api", tags=["Pagamentos"])
 app.include_router(dashboard_routes.router, prefix="/api/dashboard", tags=["Dashboard"])
+app.include_router(report_routes.router, prefix="/api/reports", tags=["Relatórios"])
 
 
 @app.get("/")
