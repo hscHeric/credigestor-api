@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
@@ -12,23 +14,33 @@ from app.services.auth import (
 )
 
 router = APIRouter()
+
 security = HTTPBearer(description="Use: Bearer <JWT>")
 
 
 @router.post("/login", response_model=TokenResponse)
 def login(data: LoginRequest, db: Session = Depends(get_db)):
+    # MSG03: campos obrigatórios (o Pydantic já valida, mas isso cobre o requisito)
+    if not data.email or not data.password:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="MSG03: Por favor, preencha todos os campos obrigatórios.",
+        )
+
     user = authenticate_user(db, data.email, data.password)
 
+    # MSG02: credenciais inválidas (mensagem genérica)
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="E-mail ou senha incorretos.",
+            detail="MSG02: E-mail ou senha incorretos. Por favor, tente novamente.",
         )
 
+    # MSG04: usuário inativo/bloqueado
     if not user.active:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Usuário inativo.",
+            detail="MSG04: Sua conta está inativa. Entre em contato com o administrador.",
         )
 
     access_token = create_access_token(
@@ -36,12 +48,14 @@ def login(data: LoginRequest, db: Session = Depends(get_db)):
         role=user.role,
     )
 
-    return {
-        "access_token": access_token,
-        "user_id": user.id,
-        "user_name": user.name,
-        "user_role": user.role,
-    }
+    return TokenResponse(
+        access_token=access_token,
+        token_type="bearer",
+        message="MSG01: Login realizado com sucesso. Redirecionando...",
+        user_id=user.id,
+        user_name=user.name,
+        user_role=user.role,
+    )
 
 
 def get_current_user(
@@ -63,20 +77,7 @@ def get_current_user(
     if not user or not user.active:
         raise HTTPException(status_code=401, detail="Usuário inválido")
 
-    # injeta role do token
-    user.token_role = role
-    return user
-
-
-def require_admin(user: User = Depends(get_current_user)):
-    if user.token_role != "admin":
-        raise HTTPException(status_code=403, detail="Acesso restrito a administradores")
-    return user
-
-
-def require_seller(user: User = Depends(get_current_user)):
-    if user.token_role != "seller":
-        raise HTTPException(status_code=403, detail="Acesso restrito a vendedores")
+    setattr(user, "token_role", role)
     return user
 
 
@@ -86,5 +87,5 @@ def me(user: User = Depends(get_current_user)):
         "id": user.id,
         "name": user.name,
         "email": user.email,
-        "role": user.token_role,
+        "role": getattr(user, "token_role", user.role),
     }

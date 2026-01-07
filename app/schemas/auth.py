@@ -6,6 +6,8 @@ class TokenResponse(BaseModel):
 
     access_token: str
     token_type: str = "bearer"
+    message: str
+
     user_id: int
     user_name: str
     user_role: str
