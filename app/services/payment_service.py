@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 from app.models.payment import Payment
 from app.models.promissory_note import PromissoryNote, PromissoryNoteStatus
 from app.schemas.payment_schema import PaymentCreate
-
+from app.services.interest_service import calculate_interest_and_fine_for_note
 
 TWOPLACES = Decimal("0.01")
 
@@ -38,16 +38,20 @@ def register_payment(
     if amount_paid <= Decimal("0.00"):
         raise ValueError("Valor pago deve ser maior que zero.")
 
-    # RF10: pagamento parcial permitido, mas não pode exceder saldo (evita overpay)
     if amount_paid > outstanding:
         raise ValueError("MSG18: O valor pago não pode ser maior que o saldo devedor.")
+
+    # RF09: se vencida, calcula automaticamente juros/multa
+    breakdown = calculate_interest_and_fine_for_note(
+        db, note=note, on_date=data.payment_date
+    )
 
     payment = Payment(
         promissory_note_id=note.id,
         amount_paid=amount_paid,
         payment_date=data.payment_date,
-        interest_amount=_q2(data.interest_amount),
-        fine_amount=_q2(data.fine_amount),
+        interest_amount=_q2(breakdown["interest_amount"]),
+        fine_amount=_q2(breakdown["fine_amount"]),
         notes=data.notes,
     )
 
@@ -61,7 +65,7 @@ def register_payment(
         note.payment_date = data.payment_date
     else:
         note.status = PromissoryNoteStatus.PARTIAL_PAYMENT.value
-        note.payment_date = None  # ainda não quitou
+        note.payment_date = None
 
     db.add(payment)
     db.commit()
