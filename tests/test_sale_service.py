@@ -39,7 +39,7 @@ def test_split_amount_exact_division():
     assert sum(parts) == total
 
 def test_split_amount_with_remainder():
-    """Testa dízima periódica (100 / 3 = 33.33, 33.33, 33.34)"""
+    """Testa dízima periódica """
     total = Decimal("100.00")
     parts = _split_amount(total, 3)
     
