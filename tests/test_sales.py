@@ -5,14 +5,14 @@ from app.main import app
 from app.models.user import User
 from app.router.auth_routes import get_current_user
 
+# Teste de integração 2 - rotas de vendas
+
 @pytest.fixture(autouse=True)
 def mock_login():
     def mock_get_current_user():
         return User(id=1, email="admin@teste.com", role="admin", active=True)
     app.dependency_overrides[get_current_user] = mock_get_current_user
     yield
-
-# --- Testes ---
 
 def test_create_sale_success(client: TestClient):
     # 1. Cria cliente
