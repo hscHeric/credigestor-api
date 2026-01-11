@@ -15,6 +15,7 @@ from app.router import (
     report_routes,
     sale_routes,
     system_config_routes,
+    user_routes,
 )
 
 
@@ -102,6 +103,7 @@ app.include_router(
     prefix="/api",
     tags=["Exportação"],
 )
+app.include_router(user_routes.router, prefix="/api/users", tags=["Usuários"])
 
 
 @app.get("/")
