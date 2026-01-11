@@ -80,8 +80,9 @@ def test_login_inactive_user(client, db_session):
 
 
 def test_login_empty_fields_hits_msg03(client):
-    r = client.post("/api/auth/login", json={"email": "", "password": ""})
-    # no router você lança 422 com MSG03
+    # Envia email válido para passar no Pydantic, mas senha vazia para cair no seu IF
+    r = client.post("/api/auth/login", json={"email": "teste@valido.com", "password": ""})
+    
     assert r.status_code == 422
     assert "MSG03" in r.json()["detail"]
 

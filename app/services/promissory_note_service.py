@@ -9,6 +9,11 @@ from app.models.promissory_note import PromissoryNote
 from app.models.sale import Sale
 
 
+def get_promissory_note_by_id(db: Session, note_id: int) -> PromissoryNote | None:
+    """Busca uma promissória pelo ID."""
+    return db.query(PromissoryNote).filter(PromissoryNote.id == note_id).first()
+
+
 def list_promissory_notes(
     db: Session,
     *,
@@ -19,13 +24,7 @@ def list_promissory_notes(
 ) -> dict:
     """
     RF06 - Consultar e Filtrar Promissórias
-
-    Filtros:
-      - status: pending, paid, overdue, partial_payment
-      - customer_id
-      - due_from / due_to (intervalo de vencimento)
     """
-
     q = (
         db.query(PromissoryNote, Sale, Customer)
         .join(Sale, PromissoryNote.sale_id == Sale.id)

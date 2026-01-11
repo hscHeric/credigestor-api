@@ -1,5 +1,6 @@
-from unittest.mock import MagicMock
+from decimal import Decimal
 from datetime import date
+from unittest.mock import MagicMock
 from app.services.promissory_note_service import get_promissory_note_by_id, list_promissory_notes
 from app.models.promissory_note import PromissoryNote
 
@@ -11,30 +12,55 @@ def test_get_promissory_note_by_id():
     result = get_promissory_note_by_id(mock_db, 1)
     assert result.id == 1
 
-def test_list_promissory_notes_filters():
+def test_list_promissory_notes_with_data():
+    """Testa listagem com dados para entrar no loop e cobrir a montagem do item"""
     mock_db = MagicMock()
-    mock_query = mock_db.query.return_value
     
-    # Simula cadeia de filtros
-    mock_query.filter.return_value.filter.return_value.filter.return_value.order_by.return_value.all.return_value = []
+    note_mock = MagicMock(
+        id=1, 
+        sale_id=10, 
+        installment_number=1, 
+        due_date=date(2023, 5, 10), 
+        original_amount=Decimal("100.00"), 
+        paid_amount=Decimal("0.00"), 
+        status="pending",
+        created_at=date.today(),
+        updated_at=date.today()
+    )
+    sale_mock = MagicMock(id=10, customer_id=5)
+    cust_mock = MagicMock(id=5, full_name="Cliente Teste")
 
-    list_promissory_notes(
+    mock_query = mock_db.query.return_value
+    mock_query.join.return_value = mock_query  # O join retorna a própria query
+    mock_query.filter.return_value = mock_query # O filter retorna a própria query
+    mock_query.order_by.return_value = mock_query # O order_by retorna a própria query
+    
+    mock_query.all.return_value = [(note_mock, sale_mock, cust_mock)]
+
+    result = list_promissory_notes(
         mock_db, 
         status="pending", 
-        due_date_from=date(2023, 1, 1), 
-        due_date_to=date(2023, 1, 31)
+        due_from=date(2023, 1, 1),
+        due_to=date(2023, 12, 31)
     )
+
+    assert result["total"] == 1
+    assert result["items"][0]["customer_name"] == "Cliente Teste"
+    assert result["items"][0]["outstanding_balance"] == Decimal("100.00")
+    
     assert mock_query.filter.call_count >= 1
 
-def test_list_promissory_notes_by_customer():
-    """Testa filtro por cliente que exige Join"""
+def test_list_promissory_notes_empty():
     mock_db = MagicMock()
     mock_query = mock_db.query.return_value
     
-    mock_join = mock_query.join.return_value
-    mock_join.filter.return_value.order_by.return_value.all.return_value = []
+    mock_query.join.return_value = mock_query
+    mock_query.filter.return_value = mock_query
+    mock_query.order_by.return_value = mock_query
+    mock_query.all.return_value = [] 
 
-    list_promissory_notes(mock_db, customer_id=10)
-    
-    # Verifica se o Join foi chamado
-    mock_query.join.assert_called()
+    result = list_promissory_notes(mock_db, customer_id=99)
+
+    assert result["total"] == 0
+    assert result["items"] == []
+    assert "MSG13" in result["message"]
