@@ -12,6 +12,7 @@ from app.router import (
     promissory_note_routes,
     report_routes,
     sale_routes,
+    system_config_routes,
 )
 
 
@@ -81,6 +82,14 @@ app.include_router(payment_routes.router, prefix="/api", tags=["Pagamentos"])
 app.include_router(dashboard_routes.router, prefix="/api/dashboard", tags=["Dashboard"])
 app.include_router(report_routes.router, prefix="/api/reports", tags=["Relatórios"])
 app.include_router(interest_routes.router, prefix="/api", tags=["Juros e Multa"])
+app.include_router(
+    system_config_routes.router, prefix="/api/system-config", tags=["Configurações"]
+)
+app.include_router(
+    promissory_note_routes.router,
+    prefix="/api/promissory-notes",
+    tags=["Promissórias"],
+)
 
 
 @app.get("/")

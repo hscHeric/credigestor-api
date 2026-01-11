@@ -20,7 +20,7 @@ security = HTTPBearer(description="Use: Bearer <JWT>")
 
 @router.post("/login", response_model=TokenResponse)
 def login(data: LoginRequest, db: Session = Depends(get_db)):
-    # MSG03: campos obrigatórios (o Pydantic já valida, mas isso cobre o requisito)
+    # MSG03: campos obrigatórios
     if not data.email or not data.password:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
@@ -29,14 +29,14 @@ def login(data: LoginRequest, db: Session = Depends(get_db)):
 
     user = authenticate_user(db, data.email, data.password)
 
-    # MSG02: credenciais inválidas (mensagem genérica)
+    # MSG02: credenciais inválidas
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="MSG02: E-mail ou senha incorretos. Por favor, tente novamente.",
         )
 
-    # MSG04: usuário inativo/bloqueado
+    # MSG04: usuário inativo
     if not user.active:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -77,7 +77,26 @@ def get_current_user(
     if not user or not user.active:
         raise HTTPException(status_code=401, detail="Usuário inválido")
 
+    # injeta role vindo do token
     setattr(user, "token_role", role)
+    return user
+
+
+def require_admin(user: User = Depends(get_current_user)) -> User:
+    if getattr(user, "token_role", user.role) != "admin":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Acesso restrito a administradores.",
+        )
+    return user
+
+
+def require_seller(user: User = Depends(get_current_user)) -> User:
+    if getattr(user, "token_role", user.role) != "seller":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Acesso restrito a vendedores.",
+        )
     return user
 
 

@@ -26,7 +26,7 @@ from app.database import SessionLocal, engine, Base  # noqa: E402
 import app.models  # noqa: E402, F401
 
 from app.models.user import User, UserRole  # noqa: E402
-from app.services.auth import hash_password  # noqa: E402
+from app.services.auth_service import hash_password  # noqa: E402
 
 
 ADMIN_EMAIL = "admin@credigestor.com"

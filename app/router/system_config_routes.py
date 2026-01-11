@@ -31,4 +31,3 @@ def get_promissory_notes(
         due_from=due_from,
         due_to=due_to,
     )
-
