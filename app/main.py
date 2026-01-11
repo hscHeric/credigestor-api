@@ -7,7 +7,9 @@ from app.router import (
     auth_routes,
     customer_routes,
     dashboard_routes,
+    export_routes,
     interest_routes,
+    payment_receipts_routes,
     payment_routes,
     promissory_note_routes,
     report_routes,
@@ -89,6 +91,16 @@ app.include_router(
     promissory_note_routes.router,
     prefix="/api/promissory-notes",
     tags=["Promissórias"],
+)
+app.include_router(
+    payment_receipts_routes.router,
+    prefix="/api",
+    tags=["Pagamentos"],
+)
+app.include_router(
+    export_routes.router,
+    prefix="/api",
+    tags=["Exportação"],
 )
 
 
