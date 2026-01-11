@@ -1,33 +1,33 @@
 from __future__ import annotations
 
-from datetime import date
-from typing import Optional
-
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.models.user import User
-from app.router.auth_routes import get_current_user
-from app.schemas.promissory_note_schema import PromissoryNoteListResponse
-from app.services.promissory_note_service import list_promissory_notes
+from app.router.auth_routes import require_admin
+from app.schemas.system_config_schema import SystemConfigOut, SystemConfigUpdate
+from app.services.system_config_service import (
+    get_or_create_system_config,
+    update_system_config,
+)
 
 router = APIRouter()
 
 
-@router.get("", response_model=PromissoryNoteListResponse)
-def get_promissory_notes(
-    status: Optional[str] = Query(default=None),
-    customer_id: Optional[int] = Query(default=None, ge=1),
-    due_from: Optional[date] = Query(default=None),
-    due_to: Optional[date] = Query(default=None),
+@router.get("", response_model=SystemConfigOut)
+def get_system_config(
     db: Session = Depends(get_db),
-    _: User = Depends(get_current_user),
+    _: User = Depends(require_admin),
 ):
-    return list_promissory_notes(
-        db,
-        status=status,
-        customer_id=customer_id,
-        due_from=due_from,
-        due_to=due_to,
-    )
+    return get_or_create_system_config(db)
+
+
+@router.put("", response_model=SystemConfigOut, status_code=status.HTTP_200_OK)
+def put_system_config(
+    data: SystemConfigUpdate,
+    db: Session = Depends(get_db),
+    _: User = Depends(require_admin),
+):
+    return update_system_config(db, data)
+
