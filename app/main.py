@@ -16,6 +16,7 @@ from app.router import (
     sale_routes,
     system_config_routes,
     user_routes,
+    backup_routes
 )
 
 
@@ -104,6 +105,7 @@ app.include_router(
     tags=["Exportação"],
 )
 app.include_router(user_routes.router, prefix="/api/users", tags=["Usuários"])
+app.include_router(backup_routes.router, prefix="/api/backups", tags=["Backups"])
 
 
 @app.get("/")
