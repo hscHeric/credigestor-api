@@ -67,7 +67,6 @@ def test_payment_total_amount_and_repr():
 def test_promissory_note_properties_all_branches():
     today = date.today()
 
-    # pending + overdue
     n1 = PromissoryNote(
         id=1,
         sale_id=1,
@@ -84,7 +83,6 @@ def test_promissory_note_properties_all_branches():
     assert n1.is_overdue is True
     assert "PromissoryNote" in repr(n1)
 
-    # paid branch days_overdue == 0
     n2 = PromissoryNote(
         id=2,
         sale_id=1,
@@ -99,7 +97,6 @@ def test_promissory_note_properties_all_branches():
     assert n2.days_overdue == 0
     assert n2.is_overdue is False
 
-    # not overdue when due_date in future
     n3 = PromissoryNote(
         id=3,
         sale_id=1,
@@ -114,7 +111,6 @@ def test_promissory_note_properties_all_branches():
     assert n3.days_overdue == 0
     assert n3.is_overdue is False
 
-    # enum property
     assert n1.status_enum == PromissoryNoteStatus.PENDING
 
 
