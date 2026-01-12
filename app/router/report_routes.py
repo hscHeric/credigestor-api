@@ -1,6 +1,8 @@
 from __future__ import annotations
+from datetime import date
+from typing import Optional
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 
 from app.database import get_db
@@ -13,8 +15,10 @@ router = APIRouter()
 
 
 @router.get("/delinquency", response_model=DelinquencyReportOut)
-def report_delinquency(
+def delinquency_report_route(
+    due_from: Optional[date] = Query(None),
+    due_to: Optional[date] = Query(None),
     db: Session = Depends(get_db),
-    _: User = Depends(get_current_user),
 ):
-    return delinquency_report(db)
+    """Gera o relatório de inadimplência com filtros de datas de vencimento."""
+    return delinquency_report(db, due_from=due_from, due_to=due_to)

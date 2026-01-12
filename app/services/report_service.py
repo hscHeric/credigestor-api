@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from datetime import date
 from decimal import Decimal
+from typing import Optional
 
 from sqlalchemy.orm import Session
 
@@ -10,19 +11,26 @@ from app.models.promissory_note import PromissoryNote, PromissoryNoteStatus
 from app.models.sale import Sale
 
 
-def delinquency_report(db: Session) -> dict:
+def delinquency_report(
+    db: Session, due_from: Optional[date] = None, due_to: Optional[date] = None
+) -> dict:
     today = date.today()
 
-    # pega promissórias vencidas e não pagas
-    rows = (
+    query = (
         db.query(PromissoryNote, Sale, Customer)
         .join(Sale, PromissoryNote.sale_id == Sale.id)
         .join(Customer, Sale.customer_id == Customer.id)
-        .filter(PromissoryNote.due_date < today)
-        .filter(PromissoryNote.status != PromissoryNoteStatus.PAID.value)
-        .order_by(Customer.full_name.asc(), PromissoryNote.due_date.asc())
-        .all()
     )
+    query = query.filter(PromissoryNote.due_date < today)
+    query = query.filter(PromissoryNote.status != PromissoryNoteStatus.PAID.value)
+
+    if due_from:
+        query = query.filter(PromissoryNote.due_date >= due_from)
+
+    if due_to:
+        query = query.filter(PromissoryNote.due_date <= due_to)
+
+    rows = query.order_by(Customer.full_name.asc(), PromissoryNote.due_date.asc()).all()
 
     by_customer: dict[int, dict] = {}
 

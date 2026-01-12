@@ -77,3 +77,19 @@ def list_promissory_notes(
             else None
         ),
     }
+
+
+def update_promissory_note_status(
+    db: Session, promissory_note_id: int, status: str
+) -> PromissoryNote:
+    """Atualiza o status de uma promissória."""
+    note = (
+        db.query(PromissoryNote).filter(PromissoryNote.id == promissory_note_id).first()
+    )
+    if not note:
+        raise ValueError("Promissória não encontrada.")
+
+    note.status = status
+    db.commit()
+    db.refresh(note)
+    return note
