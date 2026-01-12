@@ -9,13 +9,16 @@ from sqlalchemy.orm import Session
 from app.models.customer import Customer
 from app.models.promissory_note import PromissoryNote, PromissoryNoteStatus
 from app.models.sale import Sale
-from app.schemas.sale_schema import SaleCreate
+from app.schemas.sale_schema import SaleCreate, SaleUpdate
 
 
 TWOPLACES = Decimal("0.01")
 
 
 def _last_day_of_month(year: int, month: int) -> int:
+    """
+    Retorna o último dia do mês para um dado ano e mês.
+    """
     # fevereiro
     if month == 2:
         is_leap = (year % 4 == 0 and year % 100 != 0) or (year % 400 == 0)
@@ -27,6 +30,9 @@ def _last_day_of_month(year: int, month: int) -> int:
 
 
 def add_months(d: date, months: int) -> date:
+    """
+    Adiciona meses a uma data, ajustando o dia se necessário.
+    """
     y = d.year + (d.month - 1 + months) // 12
     m = (d.month - 1 + months) % 12 + 1
     day = min(d.day, _last_day_of_month(y, m))
@@ -54,6 +60,9 @@ def create_sale_and_promissory_notes(
     user_id: int,
     data: SaleCreate,
 ) -> Tuple[Sale, List[PromissoryNote]]:
+    """
+    Cria uma venda e suas notas promissórias associadas.
+    """
     # Cliente existe?
     customer = db.query(Customer).filter(Customer.id == data.customer_id).first()
     if not customer:
@@ -108,3 +117,113 @@ def create_sale_and_promissory_notes(
         db.refresh(pn)
 
     return sale, notes
+
+def get_sales(
+    db: Session, 
+    skip: int = 0, 
+    limit: int = 100, 
+    user_id: int = None,
+    client_name: str = None,
+    status: str = None,
+) -> List[Sale]:
+    """
+    Lista vendas com paginação e filtros opcionais.
+    """
+    query = db.query(Sale)
+
+    if user_id:
+        query = query.filter(Sale.user_id == user_id)
+    
+    if client_name:
+        query = query.join(Customer).filter(Customer.name.ilike(f"%{client_name}%"))
+
+    if status:
+       query = query.filter(Sale.status == status)
+
+    return query.order_by(Sale.created_at.desc()).offset(skip).limit(limit).all()
+
+
+def get_sale_by_id(db: Session, sale_id: int) -> Sale | None:
+    """
+    Busca uma venda pelo ID, trazendo notas e cliente.
+    """
+    return db.query(Sale).filter(Sale.id == sale_id).first()
+
+
+def delete_sale(db: Session, sale_id: int) -> bool:
+    """
+    Deleta uma venda e suas promissórias associadas.
+    """
+    sale = db.query(Sale).filter(Sale.id == sale_id).first()
+    if not sale:
+        return False
+
+    db.delete(sale)
+    db.commit()
+    return True
+
+
+def update_sale(
+    db: Session, 
+    sale_id: int, 
+    data: SaleUpdate
+) -> Tuple[Sale, List[PromissoryNote]]:
+    """
+    Atualiza uma venda. Se houver mudança nos valores ou datas, gera as promissórias novamente
+    (apenas se nenhuma parcela já tiver sido paga).
+    """
+    sale = db.query(Sale).filter(Sale.id == sale_id).first()
+    if not sale:
+        raise ValueError("Venda não encontrada.")
+
+    # verifica se há mudanças que impactam nas notas
+    financial_changes = (
+        (data.total_amount is not None and data.total_amount != sale.total_amount) or
+        (data.installments_count is not None and data.installments_count != sale.installments_count) or
+        (data.first_installment_date is not None and data.first_installment_date != sale.first_installment_date) or
+        (data.down_payment is not None and data.down_payment != sale.down_payment)
+    )
+
+    if financial_changes:
+        existing_notes = db.query(PromissoryNote).filter(PromissoryNote.sale_id == sale.id).all()
+        # verifica se há parcelas pagas
+        for note in existing_notes:
+            if note.status == PromissoryNoteStatus.PAID.value or note.paid_amount > 0:
+                raise ValueError("Não é possível alterar valores de uma venda que já possui parcelas pagas.")
+
+        if data.total_amount: sale.total_amount = data.total_amount
+        if data.down_payment: sale.down_payment = data.down_payment
+        if data.installments_count: sale.installments_count = data.installments_count
+        if data.first_installment_date: sale.first_installment_date = data.first_installment_date
+        
+        # deleta notas antigas
+        db.query(PromissoryNote).filter(PromissoryNote.sale_id == sale.id).delete()
+
+        financed = (sale.total_amount - sale.down_payment).quantize(TWOPLACES, rounding=ROUND_HALF_UP)
+        amounts = _split_amount(financed, sale.installments_count)
+
+        # cria novas notas
+        new_notes = []
+        for i in range(1, sale.installments_count + 1):
+            due = add_months(sale.first_installment_date, i - 1)
+            pn = PromissoryNote(
+                sale_id=sale.id,
+                installment_number=i,
+                original_amount=amounts[i - 1],
+                paid_amount=Decimal("0.00"),
+                due_date=due,
+                status=PromissoryNoteStatus.PENDING.value
+            )
+            db.add(pn)
+            new_notes.append(pn)
+    else:
+        if data.description is not None:
+            sale.description = data.description
+        if data.customer_id is not None:
+            sale.customer_id = data.customer_id
+    
+    db.commit()
+    db.refresh(sale)
+    
+    current_notes = db.query(PromissoryNote).filter(PromissoryNote.sale_id == sale.id).all()
+    return sale, current_notes

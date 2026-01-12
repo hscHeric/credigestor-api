@@ -43,3 +43,15 @@ class SaleOut(TimestampSchema):
 
 class SaleWithNotesOut(SaleOut):
     promissory_notes: List[PromissoryNoteOut]
+
+class SaleUpdate(BaseModel):
+    customer_id: Optional[int] = None
+    description: Optional[str] = None
+    
+    total_amount: Optional[Decimal] = Field(None, gt=0, description="Novo valor total da venda")
+    down_payment: Optional[Decimal] = Field(None, ge=0, description="Novo valor de entrada")
+    installments_count: Optional[int] = Field(None, gt=0, description="Novo número de parcelas")
+    first_installment_date: Optional[date] = None
+
+    class Config:
+        from_attributes = True

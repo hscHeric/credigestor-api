@@ -76,35 +76,27 @@ app.add_middleware(
 )
 
 
+# autenticação e usuários
 app.include_router(auth_routes.router, prefix="/api/auth", tags=["Autenticação"])
+app.include_router(user_routes.router, prefix="/api/users", tags=["Usuários"])
+
+# negócio (clientes, vendas, promissórias)
 app.include_router(customer_routes.router, prefix="/api/customers", tags=["Clientes"])
 app.include_router(sale_routes.router, prefix="/api/sales", tags=["Vendas"])
-app.include_router(
-    promissory_note_routes.router, prefix="/api/promissory-notes", tags=["Promissórias"]
-)
+app.include_router(promissory_note_routes.router, prefix="/api/promissory-notes", tags=["Promissórias"])
+
+# financeiro (pagamentos, recibos, juros)
 app.include_router(payment_routes.router, prefix="/api", tags=["Pagamentos"])
+app.include_router(payment_receipts_routes.router, prefix="/api", tags=["Pagamentos"])
+app.include_router(interest_routes.router, prefix="/api", tags=["Juros e Multa"])
+
+# gestão e relatórios
 app.include_router(dashboard_routes.router, prefix="/api/dashboard", tags=["Dashboard"])
 app.include_router(report_routes.router, prefix="/api/reports", tags=["Relatórios"])
-app.include_router(interest_routes.router, prefix="/api", tags=["Juros e Multa"])
-app.include_router(
-    system_config_routes.router, prefix="/api/system-config", tags=["Configurações"]
-)
-app.include_router(
-    promissory_note_routes.router,
-    prefix="/api/promissory-notes",
-    tags=["Promissórias"],
-)
-app.include_router(
-    payment_receipts_routes.router,
-    prefix="/api",
-    tags=["Pagamentos"],
-)
-app.include_router(
-    export_routes.router,
-    prefix="/api",
-    tags=["Exportação"],
-)
-app.include_router(user_routes.router, prefix="/api/users", tags=["Usuários"])
+
+# sistema e configurações
+app.include_router(system_config_routes.router, prefix="/api/system-config", tags=["Configurações"])
+app.include_router(export_routes.router, prefix="/api", tags=["Exportação"])
 app.include_router(backup_routes.router, prefix="/api/backups", tags=["Backups"])
 
 
