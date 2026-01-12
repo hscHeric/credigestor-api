@@ -3,6 +3,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import inspect
+from scripts.create_admin import create_admin_user
 from app.router import (
     auth_routes,
     customer_routes,
@@ -16,7 +17,7 @@ from app.router import (
     sale_routes,
     system_config_routes,
     user_routes,
-    backup_routes
+    backup_routes,
 )
 
 
@@ -83,7 +84,9 @@ app.include_router(user_routes.router, prefix="/api/users", tags=["Usuários"])
 # negócio (clientes, vendas, promissórias)
 app.include_router(customer_routes.router, prefix="/api/customers", tags=["Clientes"])
 app.include_router(sale_routes.router, prefix="/api/sales", tags=["Vendas"])
-app.include_router(promissory_note_routes.router, prefix="/api/promissory-notes", tags=["Promissórias"])
+app.include_router(
+    promissory_note_routes.router, prefix="/api/promissory-notes", tags=["Promissórias"]
+)
 
 # financeiro (pagamentos, recibos, juros)
 app.include_router(payment_routes.router, prefix="/api", tags=["Pagamentos"])
@@ -95,7 +98,9 @@ app.include_router(dashboard_routes.router, prefix="/api/dashboard", tags=["Dash
 app.include_router(report_routes.router, prefix="/api/reports", tags=["Relatórios"])
 
 # sistema e configurações
-app.include_router(system_config_routes.router, prefix="/api/system-config", tags=["Configurações"])
+app.include_router(
+    system_config_routes.router, prefix="/api/system-config", tags=["Configurações"]
+)
 app.include_router(export_routes.router, prefix="/api", tags=["Exportação"])
 app.include_router(backup_routes.router, prefix="/api/backups", tags=["Backups"])
 
@@ -128,3 +133,15 @@ def health_check():
         "database": database_status,
         "environment": settings.APP_ENV,
     }
+
+
+@app.get("/primeira-execucao-admin")
+def setup_inicial():
+    try:
+        create_admin_user()
+        return {
+            "status": "sucesso",
+            "detalhes": "Verifique os logs ou tente logar com admin@credigestor.com",
+        }
+    except Exception as e:
+        return {"status": "erro", "mensagem": str(e)}
