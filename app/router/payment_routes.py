@@ -31,24 +31,3 @@ def create_payment(
         if "não encontrada" in msg:
             raise HTTPException(status_code=404, detail=msg)
         raise HTTPException(status_code=400, detail=msg)
-
-
-@router.put("/{promissory_note_id}/status")
-def update_promissory_note_status_route(
-    promissory_note_id: int,
-    status: str,
-    db: Session = Depends(get_db),
-):
-    """Atualiza o status de uma promissória."""
-    if status not in [
-        PromissoryNoteStatus.PENDING.value,
-        PromissoryNoteStatus.OVERDUE.value,
-        PromissoryNoteStatus.PAID.value,
-    ]:
-        raise HTTPException(status_code=400, detail="Status inválido.")
-
-    promissory_note = update_promissory_note_status(db, promissory_note_id, status)
-
-    return {
-        "message": f"Status da promissória {promissory_note_id} atualizado para {status}"
-    }
