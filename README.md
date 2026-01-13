@@ -1,6 +1,4 @@
-# credigestor-api
-
-# CrediGestor API
+#  CrediGestor API
 
 > **Sistema de Gestão de Vendas a Prazo e Notas Promissórias**
 
@@ -10,7 +8,13 @@ Construído com **FastAPI** para alta performance, **PostgreSQL** para integrida
 
 ---
 
-##  Funcionalidades Principais
+### 🌐 Acesso ao Sistema (Deploy)
+O sistema está implantado e rodando em produção. Acesse através do link:
+👉 **[https://credigestor-api.vercel.app/](https://credigestor-api.vercel.app/)**
+
+---
+
+## Funcionalidades Principais
 
 ### Autenticação e Segurança
 * **Login JWT**: Autenticação segura via JSON Web Tokens.
