@@ -1,6 +1,5 @@
 from app.config import Settings
 
-
 def test_settings_database_urls_and_env_flags():
     s = Settings(
         APP_ENV="production",
@@ -9,9 +8,10 @@ def test_settings_database_urls_and_env_flags():
         DB_USER="u",
         DB_PASSWORD="p",
         DB_NAME="db",
+        DB_SSLMODE="disable" 
     )
 
-    assert s.DATABASE_URL == "postgresql://u:p@h:1234/db"
-    assert s.DATABASE_URL_ASYNC == "postgresql+asyncpg://u:p@h:1234/db"
+    assert s.DATABASE_URL == "postgresql://u:p@h:1234/db?sslmode=disable"
+    assert s.DATABASE_URL_ASYNC == "postgresql+asyncpg://u:p@h:1234/db?sslmode=disable"
     assert s.is_development is False
     assert s.is_production is True

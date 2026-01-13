@@ -29,3 +29,19 @@ def test_delinquency_report():
     assert cust_data["customer_name"] == "João"
     assert cust_data["overdue_installments_count"] == 1
     assert cust_data["installments"][0]["days_overdue"] == 10
+
+def test_delinquency_report_filters():
+    """Testa os filtros de data (due_from e due_to)"""
+    mock_db = MagicMock()
+    
+    mock_query = mock_db.query.return_value.join.return_value.join.return_value
+    mock_query.filter.return_value = mock_query
+    
+    mock_query.order_by.return_value.all.return_value = []
+    
+    d1 = date(2023, 1, 1)
+    d2 = date(2023, 1, 31)
+    
+    delinquency_report(mock_db, due_from=d1, due_to=d2)
+    
+    assert mock_query.filter.call_count >= 4

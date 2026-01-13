@@ -8,7 +8,7 @@ from app.services.customer_service import (
     get_customer_by_id, 
     get_customer_by_cpf
 )
-from app.schemas.customer_schema import CustomerCreate, CustomerUpdate
+from app.schemas.customer_schema import CustomerCreate, CustomerUpdate, CustomerOut
 from app.models.customer import Customer
 
 def test_create_customer_success():
@@ -21,7 +21,7 @@ def test_create_customer_success():
         active=True
     )
     customer = create_customer(mock_db, data)
-    assert customer.cpf == "111.111.111-11"
+    assert customer.cpf == "11111111111"
 
 def test_create_customer_duplicate_cpf():
     mock_db = MagicMock()
@@ -37,7 +37,7 @@ def test_create_customer_duplicate_cpf():
 
 def test_customer_schema_invalid_cpf():
     """Tenta criar esquema com CPF inválido para disparar o validador"""
-    with pytest.raises(ValidationError, match="CPF deve estar no formato"):
+    with pytest.raises(ValidationError, match="CPF deve conter 11 dígitos"):
         CustomerCreate(
             full_name="Teste CPF Ruim", 
             cpf="12345", 
@@ -70,3 +70,27 @@ def test_update_customer():
     update_data = CustomerUpdate(full_name="Novo", phone="999")
     updated = update_customer(mock_db, customer, update_data)
     assert updated.full_name == "Novo"
+
+def test_customer_out_cpf_formatting():
+    """Testa se o validador de saída formata o CPF corretamente"""
+    data = {
+        "id": 1, 
+        "full_name": "Teste", 
+        "cpf": "11122233344", 
+        "phone": "123",  
+        "email": "a@a.com"
+    }
+    
+    customer_out = CustomerOut(**data)
+    assert customer_out.cpf == "111.222.333-44"
+
+def test_customer_out_cpf_already_formatted():
+    """Testa se o validador ignora se já vier formatado ou inválido"""
+    data = {
+        "id": 1, 
+        "full_name": "Teste", 
+        "cpf": "111.222.333-44", 
+        "phone": "123"
+    }
+    customer_out = CustomerOut(**data)
+    assert customer_out.cpf == "111.222.333-44"
