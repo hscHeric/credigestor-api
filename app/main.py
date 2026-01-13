@@ -1,6 +1,7 @@
 import logging
 from contextlib import asynccontextmanager
-from fastapi import FastAPI
+from app.database import SessionLocal
+from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import inspect
 from scripts.create_admin import create_admin_user
@@ -19,6 +20,8 @@ from app.router import (
     user_routes,
     backup_routes,
 )
+from app.database import get_db
+from sqlalchemy.orm import Session
 
 
 logging.basicConfig(level=logging.INFO)
@@ -144,4 +147,25 @@ def setup_inicial():
             "detalhes": "Verifique os logs ou tente logar com admin@credigestor.com",
         }
     except Exception as e:
+        return {"status": "erro", "mensagem": str(e)}
+
+
+@app.get("/seed-massivo-duna")
+def seed_massivo_endpoint(db: Session = Depends(get_db)):
+    """
+    Popula o sistema com centenas de registros usando a lógica de Duna.
+    Utiliza os services para garantir integridade financeira.
+    """
+    try:
+        from scripts.seed_database import seed_db_massive
+
+        resultado = seed_db_massive(db)
+        return {
+            "status": "sucesso",
+            "detalhes": "O Império de Arrakis foi populado com sucesso.",
+            "promissorias_geradas": resultado.get("total_notes"),
+            "mensagem": "A especiaria deve fluir!",
+        }
+    except Exception as e:
+        logger.error(f"Erro no seed: {e}")
         return {"status": "erro", "mensagem": str(e)}
