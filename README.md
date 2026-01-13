@@ -9,6 +9,7 @@ Construído com **FastAPI** para alta performance, **PostgreSQL** para integrida
 ---
 
 ### 🌐 Acesso ao Sistema (Deploy)
+
 O sistema está implantado e rodando em produção. Acesse através do link:
 👉 **[https://credigestor-api.vercel.app/](https://credigestor-api.vercel.app/)**
 
@@ -64,6 +65,20 @@ O sistema está implantado e rodando em produção. Acesse através do link:
 * Git.
 
 ### 2. Clonar o Repositório
-```bash
 git clone [https://github.com/seu-usuario/credigestor-api.git](https://github.com/seu-usuario/credigestor-api.git)
 cd credigestor-api
+
+### 3. Configurar Variáveis de ambiente 
+cp .env.example .env
+
+### 4. executando com docker:
+subir os serviços: docker-compose up --build -d
+
+### 5. cobertura de testes unitários
+pytest --cov=app tests/unit/
+
+
+
+
+
+
