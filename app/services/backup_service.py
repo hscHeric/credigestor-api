@@ -4,7 +4,7 @@ import io
 import json
 import zipfile
 from datetime import datetime
-from typing import Iterable, List, Tuple
+from typing import List, Tuple
 
 from sqlalchemy import text
 from sqlalchemy.engine import Engine
@@ -28,34 +28,54 @@ def _copy_table_csv(engine: Engine, table: str, schema: str = "public") -> bytes
     """
     Faz COPY da tabela para CSV (com header) via TO STDOUT.
     Evita pg_dump. Retorna bytes do CSV.
+
+    IMPORTANTE: engine.raw_connection() retorna um ConnectionFairy que
+    não suporta "with ... as ...". Fechamos manualmente.
     """
     sql = f'COPY "{schema}"."{table}" TO STDOUT WITH CSV HEADER'
 
-    # pega conexão DBAPI (psycopg2/psycopg) por baixo do SQLAlchemy
-    with engine.raw_connection() as raw:
+    raw = engine.raw_connection()
+    try:
         cur = raw.cursor()
-        buf = io.StringIO()
+        try:
+            buf = io.StringIO()
 
-        # psycopg2 tem copy_expert; psycopg3 tem copy também (mas nem sempre)
-        if hasattr(cur, "copy_expert"):
-            cur.copy_expert(sql, buf)
-        else:
-            # fallback: tenta executar COPY via cursor.copy (psycopg3)
-            copy = cur.copy(sql)  # type: ignore[attr-defined]
-            for row in copy.rows():  # type: ignore[attr-defined]
-                buf.write(row)
+            # psycopg2: copy_expert
+            if hasattr(cur, "copy_expert"):
+                cur.copy_expert(sql, buf)
 
-        cur.close()
+            # psycopg3: copy (objeto com rows())
+            elif hasattr(cur, "copy"):
+                copy = cur.copy(sql)  # type: ignore[attr-defined]
+                for row in copy.rows():  # type: ignore[attr-defined]
+                    buf.write(row)
 
-    return buf.getvalue().encode("utf-8")
+            else:
+                raise RuntimeError(
+                    "Driver não suporta COPY (nem copy_expert nem copy). "
+                    "Use psycopg2 ou psycopg."
+                )
+
+            return buf.getvalue().encode("utf-8")
+
+        finally:
+            try:
+                cur.close()
+            except Exception:
+                pass
+    finally:
+        try:
+            raw.close()
+        except Exception:
+            pass
 
 
 def build_backup_zip(engine: Engine, schema: str = "public") -> Tuple[str, bytes]:
     """
     Gera um .zip em memória contendo:
       - manifest.json
-      - data/<table>.csv para cada tabela do schema
-    Retorna (filename, bytes_zip).
+      - data/<tabela>.csv para cada tabela do schema
+    Retorna (nome_arquivo, bytes_zip).
     """
     tables = _list_tables(engine, schema=schema)
     ts = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -66,7 +86,10 @@ def build_backup_zip(engine: Engine, schema: str = "public") -> Tuple[str, bytes
         "schema": schema,
         "tables": tables,
         "format": "zip+csv",
-        "notes": "Backup lógico (dados) via COPY TO STDOUT. Requer restauração por importação dos CSVs.",
+        "notes": (
+            "Backup lógico (dados) via COPY TO STDOUT. "
+            "Restauração: criar o schema/tabelas e importar os CSVs."
+        ),
     }
 
     out = io.BytesIO()
